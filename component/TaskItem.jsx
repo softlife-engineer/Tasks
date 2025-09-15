@@ -1,5 +1,12 @@
 import React from "react";
-import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Share,
+  Alert,
+} from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 
 const TaskItem = ({
@@ -13,14 +20,23 @@ const TaskItem = ({
   setTasks,
   tasks,
   deleteTask,
+  isDarkMode,
 }) => {
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, isDarkMode && styles.cardDark]}>
+     
       <TouchableOpacity
         onPress={() => completeTask(index)}
         style={styles.textWrapper}
       >
-        <Text style={[styles.text, item.completed && styles.completed]}>
+        <Text
+          style={[
+            styles.text,
+            item.completed && styles.completed,
+            isDarkMode && styles.textDark,
+            item.completed && isDarkMode && styles.completedDark,
+          ]}
+        >
           {item.title}
         </Text>
         <View style={styles.checkbox}>
@@ -32,35 +48,42 @@ const TaskItem = ({
         </View>
       </TouchableOpacity>
 
+      
       <View style={styles.actions}>
+       
         <TouchableOpacity
+          style={styles.actionButton}
           onPress={() => {
             setTaskInput(item.title);
             setUpdateIndex(index);
           }}
         >
-          <Ionicons name="create-outline" size={22} color="#333" />
+          <Ionicons name="create-outline" size={24} color="#4F46E5" />
         </TouchableOpacity>
 
+        
         <TouchableOpacity
-          onPress={() => {
-            if (updateIndex !== null) {
-              const updatedTasks = tasks.map((task, idx) => {
-                if (idx === updateIndex) {
-                  return { ...task, title: taskInput };
-                }
-                return task;
+          style={styles.actionButton}
+          onPress={async () => {
+            try {
+              const status = item.completed ? "✅" : "❌";
+              const timeStamp = new Date().toLocaleString();
+              await Share.share({
+                message: `📝 Task Details:\n\n${item.title}\nStatus: ${status}\nShared on: ${timeStamp}`,
               });
-              setTasks(updatedTasks);
-              setTaskInput("");
-              setUpdateIndex(null);
+            } catch (error) {
+              Alert.alert("Error", "Could not share task");
             }
           }}
         >
-          <Ionicons name="send" size={22} color="#3B82F6" />
+          <Ionicons name="share-social" size={24} color="#007AFF" />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => deleteTask(index)}>
+        
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => deleteTask(index)}
+        >
           <Ionicons name="trash" size={22} color="#EF4444" />
         </TouchableOpacity>
       </View>
@@ -73,17 +96,23 @@ export default TaskItem;
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    marginVertical: 6,
-    shadowColor: "#000",
     borderRadius: 12,
-    shadowOffset: { width: 0, height: 1 },
+    padding: 16,
+    marginVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    marginBottom: 10,
+    marginBottom: 12,
     marginHorizontal: 20,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
+  },
+  cardDark: {
+    backgroundColor: "#1E1E1E",
+    borderColor: "rgba(255,255,255,0.1)",
+    shadowColor: "#000",
   },
   textWrapper: {
     flexDirection: "row",
@@ -99,13 +128,28 @@ const styles = StyleSheet.create({
     color: "#333",
     flexShrink: 1,
   },
+  textDark: {
+    color: "#fff",
+  },
   completed: {
     textDecorationLine: "line-through",
     color: "#999",
   },
+  completedDark: {
+    color: "#666",
+  },
   actions: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    gap: 16,
+    gap: 12,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
+    paddingTop: 12,
+  },
+  actionButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: "rgba(0,0,0,0.03)",
   },
 });
