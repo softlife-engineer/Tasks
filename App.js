@@ -7,19 +7,21 @@ import {
   Share,
   Alert,
   Switch,
+  TouchableOpacity,
+  Text,
 } from "react-native";
 import React, { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-
 import TaskInput from "./component/TaskInput";
 import TaskItem from "./component/TaskItem";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [tasks, setTasks] = useState([
+  const [allTasks, setAllTasks] = useState([
     { title: "Complete your project", completed: true },
   ]);
+  const [tasks, setTasks] = useState(allTasks);
   const [taskInput, setTaskInput] = useState("");
   const [updateIndex, setUpdateIndex] = useState(null);
 
@@ -27,28 +29,46 @@ export default function App() {
     if (taskInput.trim() === "") return;
 
     if (updateIndex !== null) {
-      const updatedTasks = tasks.map((task, idx) =>
+      const updatedTasks = allTasks.map((task, idx) =>
         idx === updateIndex ? { ...task, title: taskInput } : task
       );
+      setAllTasks(updatedTasks);
       setTasks(updatedTasks);
       setUpdateIndex(null);
     } else {
-      setTasks([...tasks, { title: taskInput, completed: false }]);
+      const newTasks = [...allTasks, { title: taskInput, completed: false }];
+      setAllTasks(newTasks);
+      setTasks(newTasks);
     }
 
     setTaskInput("");
   };
 
   const completeTask = (index) => {
-    const updatedTasks = tasks.map((task, idx) =>
+    const updatedTasks = allTasks.map((task, idx) =>
       idx === index ? { ...task, completed: !task.completed } : task
     );
+    setAllTasks(updatedTasks);
     setTasks(updatedTasks);
   };
 
   const deleteTask = (index) => {
-    const updatedTasks = tasks.filter((_, idx) => idx !== index);
+    const updatedTasks = allTasks.filter((_, idx) => idx !== index);
+    setAllTasks(updatedTasks);
     setTasks(updatedTasks);
+  };
+
+  // 🔹 Filters
+  const getCompletedTasks = () => {
+    setTasks(allTasks.filter((task) => task.completed));
+  };
+
+  const getUncompletedTasks = () => {
+    setTasks(allTasks.filter((task) => !task.completed));
+  };
+
+  const getAllTasks = () => {
+    setTasks(allTasks);
   };
 
   const shareTasksHandler = async () => {
@@ -73,25 +93,25 @@ export default function App() {
     }
   };
 
-  
-  React.useEffect(() => {
+  // 🔹 Load saved tasks
+  useEffect(() => {
     const loadTasks = async () => {
       try {
         const storedTasks = await AsyncStorage.getItem("tasks");
         if (storedTasks) {
-          setTasks(JSON.parse(storedTasks));
+          const parsed = JSON.parse(storedTasks);
+          setAllTasks(parsed);
+          setTasks(parsed);
         }
-      } catch (error) {
-       
-      }
+      } catch (error) {}
     };
     loadTasks();
   }, []);
 
-  
-  React.useEffect(() => {
-    AsyncStorage.setItem("tasks", JSON.stringify(tasks));
-  }, [tasks]);
+  // 🔹 Save tasks
+  useEffect(() => {
+    AsyncStorage.setItem("tasks", JSON.stringify(allTasks));
+  }, [allTasks]);
 
   return (
     <SafeAreaView
@@ -99,7 +119,6 @@ export default function App() {
     >
       <StatusBar style={isDarkMode ? "light" : "dark"} />
 
-    
       <View style={styles.themeToggle}>
         <Ionicons
           name={isDarkMode ? "moon" : "sunny"}
@@ -114,7 +133,6 @@ export default function App() {
         />
       </View>
 
-     
       <View style={[styles.header, isDarkMode && styles.headerDark]}>
         <TaskInput
           taskInput={taskInput}
@@ -125,7 +143,51 @@ export default function App() {
         />
       </View>
 
-     
+      
+      <View style={styles.filterRow}>
+        <TouchableOpacity
+          onPress={getCompletedTasks}
+          style={[
+            styles.filterBtn,
+            isDarkMode ? styles.filterBtnDark : styles.filterBtnLight,
+          ]}
+        >
+          <Text
+            style={isDarkMode ? styles.filterTextDark : styles.filterTextLight}
+          >
+            Completed
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={getUncompletedTasks}
+          style={[
+            styles.filterBtn,
+            isDarkMode ? styles.filterBtnDark : styles.filterBtnLight,
+          ]}
+        >
+          <Text
+            style={isDarkMode ? styles.filterTextDark : styles.filterTextLight}
+          >
+            Uncompleted
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={getAllTasks}
+          style={[
+            styles.filterBtn,
+            isDarkMode ? styles.filterBtnDark : styles.filterBtnLight,
+          ]}
+        >
+          <Text
+            style={isDarkMode ? styles.filterTextDark : styles.filterTextLight}
+          >
+            All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
       <FlatList
         data={tasks}
         keyExtractor={(_, index) => index.toString()}
@@ -157,7 +219,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
   },
   containerDark: {
-    backgroundColor: "#121212", 
+    backgroundColor: "#121212",
   },
   header: {
     width: "100%",
@@ -173,5 +235,37 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     paddingHorizontal: 16,
     marginBottom: 12,
+  },
+
+  // 🔹 Filter row (horizontal)
+  filterRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginBottom: 15,
+  },
+  filterBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 10,
+  },
+
+  filterBtnLight: {
+    backgroundColor: "#E6F7FA",
+    borderColor: "#4AC4CF",
+  },
+  filterTextLight: {
+    color: "#000",
+    fontWeight: "600",
+  },
+
+  filterBtnDark: {
+    backgroundColor: "#1E1E1E",
+    borderColor: "#4AC4CF",
+  },
+  filterTextDark: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });
